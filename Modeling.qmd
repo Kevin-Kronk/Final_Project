@@ -28,7 +28,9 @@ Split the data
 set.seed(123)
 
 # Get training split with 70% of the data, and test split with 30%
-diabetes_split <- initial_split(diabetes_data, prop = 0.7)
+# Stratified on the response variable Diabetes_binary
+diabetes_split <- initial_split(diabetes_data, prop = 0.7, 
+                                strata = Diabetes_binary)
 diabetes_train <- training(diabetes_split)
 diabetes_test <- testing(diabetes_split)
 ```

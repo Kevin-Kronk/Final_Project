@@ -8,7 +8,37 @@ editor: visual
 
 ## Diabetes Health Indicators Dataset
 
-You should read about the data and especially about each variable. Many are coded numerically but most are not numeric variables. We'll use the Diabetes_binary as our response variable.
+The Diabetes Health Indicators Dataset is from the BRFSS 2015 dataset on Kaggle. It is the Behavioral Risk Factor Surveillance System, which is a telephone survey collected annually by the CDC. Diabetes is a chronic disease that is prevelant in the United States, has a strongly negative impact on those with it, and has a major negative impact on the economy. Early diagnosis of the disease can allow individuals to make lifestyle changes and seek treatment, therefore it is important to build a model that can accurately predict it.
+
+The focus of my project will be on how lifestyle and basic health variables impact whether or not someone has diabetes and if we are able to predict having diabetes based on these variables. The EDA will be used to explore these variables to look at their frequencies and distributions, as well as see how they relate to the response variable Diabetes_binary which expresses whether the person has diabetes or not. Modeling will be done to determine which model is best able to predict someone having diabetes based on which has the lowest log-loss.
+
+### Variables
+
+Diabetes_binary - binary variable where 0 is no diabetes and 1 is for prediabetes or diabetes.
+
+HighBP - binary variable where 0 is not high and 1 is high blood pressure.
+
+Smoker - binary variable asking if the person has smoked at least 100 cigarettes (5 packs) in their entire life, where 0 is for no and 1 for yes.
+
+PhysActivity - binary variable for if they've done physical activity in the past 30 days, not including their job, where 0 is no and 1 is yes.
+
+Fruits - binary variable for if they consume 1 or more fruit per day, where 0 is no and 1 is yes.
+
+Veggies - binary variable for if they consume 1 or more vegetable per day, where 0 is no and 1 is yes.
+
+HvyAlcoholConsump - binary variable for if men have \>= 14 drinks or women \>= 7 drinks per week, where 0 is no and 1 is yes.
+
+GenHlth - ordinal categorical variable describing their general health, where 1 is excellent, 2 is very good, 3 is good, 4 is fair, and 5 is poor.
+
+DiffWalk - binary variable for if they have serious difficulty walking or climbing stairs, where 0 is no and 1 is yes.
+
+Sex - binary variable where 0 is female and 1 is male.
+
+Age - numerical variable from 1 to 13 representing different age categories where 1 is 18-24, 9 is 60-64, and 13 is 80 or older.
+
+Income - numerical variable representing different income categories where 1 is less than \$10,000, 5 is less than \$35,000, and 8 is \$75,000 or more.
+
+### Load the Data
 
 ```{r}
 # Load in libraries
@@ -19,7 +49,296 @@ library(tidyverse)
 # Load in Diabetes Health Indicators Dataset
 diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
 
+# Select only the variables used for my analysis and convert binary to factor
+analysis_variables <- c("Diabetes_binary", "HighBP", "Smoker", "PhysActivity",
+                        "Fruits", "Veggies", "HvyAlcoholConsump", "GenHlth",
+                        "DiffWalk", "Sex", "Age", "Income")
+diabetes_data <- diabetes_data |>
+  select(all_of(analysis_variables)) |>
+  mutate(Diabetes_binary = factor(Diabetes_binary),
+         HighBP = factor(HighBP),
+         Smoker = factor(Smoker),
+         PhysActivity = factor(PhysActivity),
+         Fruits = factor(Fruits), 
+         Veggies = factor(Veggies),
+         HvyAlcoholConsump = factor(HvyAlcoholConsump),
+         DiffWalk = factor(DiffWalk),
+         Sex = factor(Sex))
+
 diabetes_data
+```
+
+### Structure of Data
+
+```{r}
+str(diabetes_data)
+```
+
+### Missing Values
+
+```{r}
+# Check for missing values
+colSums(is.na(diabetes_data))
+```
+
+There are no missing values for these variables.
+
+### Diabetes Binary
+
+```{r}
+# Get the counts of the Diabetes_binary values
+diabetes_data |>
+  group_by(Diabetes_binary) |>
+  summarize(count = n())
+```
+
+```{r}
+# Plot of Diabetes_binary
+ggplot(diabetes_data, aes(Diabetes_binary, fill = Diabetes_binary)) +
+  geom_bar()
+```
+
+### High Blood Pressure
+
+```{r}
+# Get the counts of the HighBP values
+diabetes_data |>
+  group_by(HighBP) |>
+  summarize(count = n())
+```
+
+```{r}
+# Plot of HighBP
+ggplot(diabetes_data, aes(HighBP, fill = HighBP)) +
+  geom_bar()
+```
+
+```{r}
+# Plot of HighBP by Diabetes_binary
+ggplot(diabetes_data, aes(HighBP, fill = HighBP)) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### Smoker
+
+```{r}
+# Get the counts of the Smoker values
+diabetes_data |>
+  group_by(Smoker) |>
+  summarize(count = n())
+```
+
+```{r}
+# Plot of Smoker
+ggplot(diabetes_data, aes(Smoker, fill = Smoker)) +
+  geom_bar()
+```
+
+```{r}
+# Plot of Smoker by Diabetes_binary
+ggplot(diabetes_data, aes(Smoker, fill = Smoker)) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### Physical Activity
+
+```{r}
+# Get the counts of the PhysActivity values
+diabetes_data |>
+  group_by(PhysActivity) |>
+  summarize(count = n())
+```
+
+```{r}
+# Plot of PhysActivity
+ggplot(diabetes_data, aes(PhysActivity, fill = PhysActivity)) +
+  geom_bar()
+```
+
+```{r}
+# Plot of PhysActivity by Diabetes_binary
+ggplot(diabetes_data, aes(PhysActivity, fill = PhysActivity)) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### Fruits
+
+```{r}
+# Get the counts of the Fruits values
+diabetes_data |>
+  group_by(Fruits) |>
+  summarize(count = n())
+```
+
+```{r}
+# Plot of Fruits
+ggplot(diabetes_data, aes(Fruits, fill = Fruits)) +
+  geom_bar()
+```
+
+```{r}
+# Plot of Fruits by Diabetes_binary
+ggplot(diabetes_data, aes(Fruits, fill = Fruits)) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### Veggies
+
+```{r}
+# Get the counts of the Veggies values
+diabetes_data |>
+  group_by(Veggies) |>
+  summarize(count = n())
+```
+
+```{r}
+# Plot of Veggies
+ggplot(diabetes_data, aes(Veggies, fill = Veggies)) +
+  geom_bar()
+```
+
+```{r}
+# Plot of Veggies by Diabetes_binary
+ggplot(diabetes_data, aes(Veggies, fill = Veggies)) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### Heavy Alcohol Consumption
+
+```{r}
+# Get the counts of the HvyAlcoholConsump values
+diabetes_data |>
+  group_by(HvyAlcoholConsump) |>
+  summarize(count = n())
+```
+
+```{r}
+# Plot of HvyAlcoholConsump
+ggplot(diabetes_data, aes(HvyAlcoholConsump, fill = HvyAlcoholConsump)) +
+  geom_bar()
+```
+
+```{r}
+# Plot of HvyAlcoholConsump by Diabetes_binary
+ggplot(diabetes_data, aes(HvyAlcoholConsump, fill = HvyAlcoholConsump)) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### General Health
+
+```{r}
+# Get the counts of the GenHlth values
+diabetes_data |>
+  group_by(GenHlth) |>
+  summarize(count = n())
+```
+
+```{r}
+# Get the summary statistics of GenHlth
+summary(diabetes_data$GenHlth)
+```
+
+```{r}
+# Plot of GenHlth
+ggplot(diabetes_data, aes(GenHlth, fill = factor(GenHlth))) +
+  geom_bar()
+```
+
+```{r}
+# Plot of GenHlth by Diabetes_binary
+ggplot(diabetes_data, aes(GenHlth, fill = factor(GenHlth))) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### Difficulty Walking
+
+```{r}
+# Get the counts of the DiffWalk values
+diabetes_data |>
+  group_by(DiffWalk) |>
+  summarize(count = n())
+```
+
+```{r}
+# Plot of DiffWalk
+ggplot(diabetes_data, aes(DiffWalk, fill = DiffWalk)) +
+  geom_bar()
+```
+
+```{r}
+# Plot of DiffWalk by Diabetes_binary
+ggplot(diabetes_data, aes(DiffWalk, fill = factor(DiffWalk))) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### Sex
+
+```{r}
+# Get the counts of the Sex values
+diabetes_data |>
+  group_by(Sex) |>
+  summarize(count = n())
+```
+
+```{r}
+# Plot of Sex
+ggplot(diabetes_data, aes(Sex, fill = Sex)) +
+  geom_bar()
+```
+
+```{r}
+# Plot of Sex by Diabetes_binary
+ggplot(diabetes_data, aes(Sex, fill = factor(Sex))) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### Age
+
+```{r}
+# Get the summary statistics of Age
+summary(diabetes_data$Age)
+```
+
+```{r}
+# Plot of Age
+ggplot(diabetes_data, aes(Age, fill = factor(Age))) +
+  geom_bar()
+```
+
+```{r}
+# Plot of Age by Diabetes_binary
+ggplot(diabetes_data, aes(Age, fill = factor(Age))) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
+```
+
+### Income
+
+```{r}
+# Get the summary statistics of Income
+summary(diabetes_data$Income)
+```
+
+```{r}
+# Plot of Income
+ggplot(diabetes_data, aes(Income, fill = factor(Income))) +
+  geom_bar()
+```
+
+```{r}
+# Plot of Income by Diabetes_binary
+ggplot(diabetes_data, aes(Income, fill = factor(Income))) +
+  geom_bar() +
+  facet_wrap(~ Diabetes_binary)
 ```
 
 [Click here for the Modeling Page](Modeling.html)
