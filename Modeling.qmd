@@ -1,0 +1,7 @@
+---
+title: "ST 558 Final Project Modeling"
+format: html
+editor: visual
+---
+
+## Modeling
