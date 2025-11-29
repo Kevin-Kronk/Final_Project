@@ -4,6 +4,22 @@ format: html
 editor: visual
 ---
 
-## EDA
+# EDA
+
+## Diabetes Health Indicators Dataset
+
+You should read about the data and especially about each variable. Many are coded numerically but most are not numeric variables. We'll use the Diabetes_binary as our response variable.
+
+```{r}
+# Load in libraries
+library(tidyverse)
+```
+
+```{r}
+# Load in Diabetes Health Indicators Dataset
+diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
+
+diabetes_data
+```
 
 [Click here for the Modeling Page](Modeling.html)

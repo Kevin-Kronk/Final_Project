@@ -4,4 +4,36 @@ format: html
 editor: visual
 ---
 
-## Modeling
+# Modeling
+
+## Introduction
+
+```{r}
+# Load in libraries
+library(tidyverse)
+library(tidymodels)
+```
+
+```{r}
+# Load in Diabetes Health Indicators Dataset
+diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
+
+diabetes_data
+```
+
+Split the data
+
+```{r}
+# Set seed for reproducibility
+set.seed(123)
+
+# Get training split with 70% of the data, and test split with 30%
+diabetes_split <- initial_split(diabetes_data, prop = 0.7)
+diabetes_train <- training(diabetes_split)
+diabetes_test <- testing(diabetes_split)
+```
+
+```{r}
+# Create 5 fold Cross Validation splits
+diabetes_folds <- vfold_cv(diabetes_train, v = 5)
+```
