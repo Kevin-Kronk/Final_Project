@@ -8,6 +8,8 @@ editor: visual
 
 ## Introduction
 
+## Load the Data
+
 ```{r}
 # Load in libraries
 library(tidyverse)
@@ -18,10 +20,26 @@ library(tidymodels)
 # Load in Diabetes Health Indicators Dataset
 diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
 
+# Select only the variables used for my analysis and convert binary to factor
+analysis_variables <- c("Diabetes_binary", "HighBP", "Smoker", "PhysActivity",
+                        "Fruits", "Veggies", "HvyAlcoholConsump", "GenHlth",
+                        "DiffWalk", "Sex", "Age", "Income")
+diabetes_data <- diabetes_data |>
+  select(all_of(analysis_variables)) |>
+  mutate(Diabetes_binary = factor(Diabetes_binary),
+         HighBP = factor(HighBP),
+         Smoker = factor(Smoker),
+         PhysActivity = factor(PhysActivity),
+         Fruits = factor(Fruits), 
+         Veggies = factor(Veggies),
+         HvyAlcoholConsump = factor(HvyAlcoholConsump),
+         DiffWalk = factor(DiffWalk),
+         Sex = factor(Sex))
+
 diabetes_data
 ```
 
-Split the data
+## Split the Data
 
 ```{r}
 # Set seed for reproducibility
@@ -33,9 +51,80 @@ diabetes_split <- initial_split(diabetes_data, prop = 0.7,
                                 strata = Diabetes_binary)
 diabetes_train <- training(diabetes_split)
 diabetes_test <- testing(diabetes_split)
+
+# Create 5 fold Cross Validation splits
+diabetes_folds <- vfold_cv(diabetes_train, v = 5)
+```
+
+## Create Models
+
+### Classification Tree
+
+```{r}
+diabetes_tree_rec <- recipe(Diabetes_binary ~ ., data = diabetes_data) |>
+  step_normalize(all_numeric())
 ```
 
 ```{r}
-# Create 5 fold Cross Validation splits
-diabetes_folds <- vfold_cv(diabetes_train, v = 5)
+diabetes_tree_mod <- decision_tree(tree_depth = 30,
+                          min_n = 20,
+                          cost_complexity = tune()) |>
+  set_engine("rpart") |>
+  set_mode("classification")
+```
+
+```{r}
+diabetes_tree_wkf <- workflow() |>
+  add_recipe(diabetes_tree_rec) |>
+  add_model(diabetes_tree_mod)
+```
+
+```{r}
+diabetes_tree_grid <- grid_regular(cost_complexity(),
+                                   levels = c(10))
+diabetes_tree_fits <- diabetes_tree_wkf |>
+  tune_grid(resamples = diabetes_folds,
+            grid = diabetes_tree_grid,
+            metrics = metric_set(mn_log_loss))
+
+diabetes_tree_fits |>
+  collect_metrics() |>
+  filter(.metric == "mn_log_loss") |>
+  arrange(mean)
+```
+
+```{r}
+diabetes_tree_best_params <- select_best(diabetes_tree_fits, 
+                                         metric = "mn_log_loss")
+
+diabetes_tree_best_params
+```
+
+```{r}
+diabetes_tree_final_wkf <- diabetes_tree_wkf |>
+  finalize_workflow(diabetes_tree_best_params)
+
+diabetes_tree_final_fit <- diabetes_tree_final_wkf |>
+  last_fit(diabetes_split, metrics = metric_set(mn_log_loss))
+
+diabetes_tree_final_fit |>
+  collect_metrics()
+```
+
+### Random Forest
+
+```{r}
+diabetes_forest_rec <- recipe(Diabetes_binary ~ ., data = diabetes_data) |>
+  step_normalize(all_numeric())
+```
+
+### Final Model Selection
+
+Fit the best model on the full data set.
+
+```{r}
+diabetes_best_model <- (workflow) |>
+  fit(diabetes_data)
+
+tidy(diabetes_best_model)
 ```
