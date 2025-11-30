@@ -81,7 +81,7 @@ diabetes_tree_wkf <- workflow() |>
 
 ```{r}
 diabetes_tree_grid <- grid_regular(cost_complexity(),
-                                   levels = c(10))
+                                   levels = 10)
 diabetes_tree_fits <- diabetes_tree_wkf |>
   tune_grid(resamples = diabetes_folds,
             grid = diabetes_tree_grid,
@@ -114,17 +114,83 @@ diabetes_tree_final_fit |>
 ### Random Forest
 
 ```{r}
-diabetes_forest_rec <- recipe(Diabetes_binary ~ ., data = diabetes_data) |>
+diabetes_rf_rec <- recipe(Diabetes_binary ~ HighBP + Smoker + PhysActivity + 
+                            Fruits + Veggies + HvyAlcoholConsump + 
+                            GenHlth + DiffWalk + Sex + Age + Income, 
+                          data = diabetes_data) |>
   step_normalize(all_numeric())
+```
+
+```{r}
+diabetes_rf_mod <- rand_forest(mtry = tune(),
+                               trees = 100) |>
+  set_engine("ranger", importance = "impurity") |>
+  set_mode("classification")
+```
+
+```{r}
+diabetes_rf_wkf <- workflow() |>
+  add_recipe(diabetes_rf_rec) |>
+  add_model(diabetes_rf_mod)
+```
+
+```{r}
+diabetes_rf_grid <- grid_regular(mtry(range = c(1, 11)),
+                                 levels = 5)
+
+diabetes_rf_fit <- diabetes_rf_wkf |>
+  tune_grid(resamples = diabetes_folds,
+            grid = diabetes_rf_grid,
+            metrics = metric_set(mn_log_loss))
+
+diabetes_rf_fit |>
+  collect_metrics() |>
+  filter(.metric == "mn_log_loss") |>
+  arrange(mean)
+```
+
+```{r}
+diabetes_rf_best_params <- select_best(diabetes_rf_fit, metric = "mn_log_loss") 
+
+diabetes_rf_final_wkf <- diabetes_rf_wkf |>
+  finalize_workflow(diabetes_rf_best_params) 
+
+diabetes_rf_final_fit <- diabetes_rf_final_wkf |>
+  last_fit(diabetes_split, metrics = metric_set(mn_log_loss))
+
+diabetes_rf_final_fit |>
+  collect_metrics()
 ```
 
 ### Final Model Selection
 
+```{r}
+rbind(
+  diabetes_tree_final_fit |>
+    collect_metrics() |>
+    mutate(Model = "Tree", .before = ".metric"),
+  diabetes_rf_final_fit |>
+    collect_metrics() |>
+    mutate(Model = "RF", .before = ".metric")
+)
+```
+
 Fit the best model on the full data set.
 
 ```{r}
-diabetes_best_model <- (workflow) |>
+diabetes_best_model <- diabetes_rf_final_wkf |>
   fit(diabetes_data)
 
-tidy(diabetes_best_model)
+diabetes_best_model
+```
+
+```{r}
+diabetes_rf_final_model <- extract_fit_engine(diabetes_best_model)
+
+diabetes_rf_final_model$variable.importance |>
+  enframe(name = "Variable", value = "Importance") |>
+  arrange(Importance) |>
+  mutate(Variable = factor(Variable, levels = Variable)) |>
+  ggplot(aes(x = Importance, y = Variable)) +
+  geom_bar(stat = "identity")
 ```

@@ -74,6 +74,8 @@ diabetes_data
 str(diabetes_data)
 ```
 
+There are 253,680 observations with 1 response variable and 11 predictor variables.
+
 ### Missing Values
 
 ```{r}
