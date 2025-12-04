@@ -43,11 +43,13 @@ Income - numerical variable representing different income categories where 1 is 
 ```{r}
 # Load in libraries
 library(tidyverse)
+library(DescTools)
 ```
 
 ```{r}
 # Load in Diabetes Health Indicators Dataset
-diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
+diabetes_data <- read_csv("API_Docker/diabetes_binary_health_indicators_BRFSS2015.csv",
+                          show_col_types = FALSE)
 
 # Select only the variables used for my analysis and convert binary to factor
 analysis_variables <- c("Diabetes_binary", "HighBP", "Smoker", "PhysActivity",

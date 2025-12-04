@@ -5,7 +5,8 @@ library(yardstick)
 library(DescTools)
 
 # Load in Diabetes Health Indicators Dataset
-diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv")
+diabetes_data <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv",
+                          show_col_types = FALSE)
 
 # Select only the variables used for my analysis and convert binary to factor
 analysis_variables <- c("Diabetes_binary", "HighBP", "Smoker", "PhysActivity",
@@ -41,7 +42,14 @@ diabetes_rf_wkf <- workflow() |>
 diabetes_best_model <- diabetes_rf_wkf |>
   fit(diabetes_data)
 
-# Need to find all modes and means
+# Find modes of all binary factor variables
+diabetes_data_modes <- diabetes_data |>
+  summarize(across(where(is.factor), ~ as.character(Mode(.x)[1])))
+
+# Find means of all numerical variables
+diabetes_data_means <- diabetes_data |>
+  summarize(across(where(is.numeric), ~ as.character(mean(.x))))
+
 
 #* pred endpoint
 #* @param HighBP High Blood Pressure number
@@ -56,17 +64,17 @@ diabetes_best_model <- diabetes_rf_wkf |>
 #* @param Age Age number
 #* @param Income Income number
 #* @get /pred
-function(HighBP = 0, 
-         Smoker = 0, 
-         PhysActivity = 0, 
-         Fruits = 0, 
-         Veggies = 0, 
-         HvyAlcoholConsump = 0, 
-         GenHlth = 3, 
-         DiffWalk = 0, 
-         Sex = 0, 
-         Age = 7, 
-         Income = 4){
+function(HighBP = diabetes_data_modes$HighBP, 
+         Smoker = diabetes_data_modes$Smoker, 
+         PhysActivity = diabetes_data_modes$PhysActivity, 
+         Fruits = diabetes_data_modes$Fruits, 
+         Veggies = diabetes_data_modes$Veggies, 
+         HvyAlcoholConsump = diabetes_data_modes$HvyAlcoholConsump, 
+         GenHlth = diabetes_data_means$GenHlth, 
+         DiffWalk = diabetes_data_modes$DiffWalk, 
+         Sex = diabetes_data_modes$Sex, 
+         Age = diabetes_data_means$Age, 
+         Income = diabetes_data_means$Income){
   pred_data <- as_tibble(list(HighBP = as.factor(HighBP), 
                            Smoker = as.factor(Smoker), 
                            PhysActivity = as.factor(PhysActivity), 
@@ -85,11 +93,13 @@ function(HighBP = 0,
 #* info endpoint
 #* @get /info
 function(){
-  print("Kevin Kronk")
-  print("https://kevin-kronk.github.io/Final_Project/EDA.html")
+  paste("Hello, my name is Kevin Kronk." +
+        "Here's a link to my Diabetes Health Indicators Dataset EDA:" +
+        "https://kevin-kronk.github.io/Final_Project/EDA.html")
 }
 
 #* confusion endpoint
+#* @serializer png
 #* @get /confusion
 function(){
   diabetes_best_model <- diabetes_rf_wkf |>
