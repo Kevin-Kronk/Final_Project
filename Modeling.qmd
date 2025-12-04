@@ -8,6 +8,8 @@ editor: visual
 
 ## Introduction
 
+Now that we've explored the variables from the Diabetes Health Indicators Dataset, it's time to create models with them. The goal is to be able to use lifestyle and basic health variables to predict whether or not someone has diabetes. Early diagnosis of diabetes can help individuals make lifestyle changes and seek treatment, therefore it is important to be able to accurately predict. For this analysis two types of models will be explored, a classification tree and a classification random forest. Both will use cross validation with tuning on a hyperparameter to select the best model from each, and then they will be compared on the test set to determine which is the overall best model.
+
 ## Load the Data
 
 ```{r}
@@ -25,17 +27,28 @@ diabetes_data <- read_csv("API_Docker/diabetes_binary_health_indicators_BRFSS201
 analysis_variables <- c("Diabetes_binary", "HighBP", "Smoker", "PhysActivity",
                         "Fruits", "Veggies", "HvyAlcoholConsump", "GenHlth",
                         "DiffWalk", "Sex", "Age", "Income")
+
+# When converting variables to factor, set levels and labels for those levels
 diabetes_data <- diabetes_data |>
   select(all_of(analysis_variables)) |>
-  mutate(Diabetes_binary = factor(Diabetes_binary),
-         HighBP = factor(HighBP),
-         Smoker = factor(Smoker),
-         PhysActivity = factor(PhysActivity),
-         Fruits = factor(Fruits), 
-         Veggies = factor(Veggies),
-         HvyAlcoholConsump = factor(HvyAlcoholConsump),
-         DiffWalk = factor(DiffWalk),
-         Sex = factor(Sex))
+  mutate(Diabetes_binary = factor(Diabetes_binary, 
+                                  levels = c("0", "1"), labels = c("No", "Yes")),
+         HighBP = factor(HighBP,
+                         levels = c("0", "1"), labels = c("Low", "High")),
+         Smoker = factor(Smoker,
+                         levels = c("0", "1"), labels = c("No", "Yes")),
+         PhysActivity = factor(PhysActivity,
+                               levels = c("0", "1"), labels = c("No", "Yes")),
+         Fruits = factor(Fruits,
+                         levels = c("0", "1"), labels = c("No", "Yes")), 
+         Veggies = factor(Veggies,
+                          levels = c("0", "1"), labels = c("No", "Yes")),
+         HvyAlcoholConsump = factor(HvyAlcoholConsump,
+                                    levels = c("0", "1"), labels = c("No", "Yes")),
+         DiffWalk = factor(DiffWalk,
+                           levels = c("0", "1"), labels = c("No", "Yes")),
+         Sex = factor(Sex,
+                      levels = c("0", "1"), labels = c("Female", "Male")))
 
 diabetes_data
 ```
@@ -61,33 +74,44 @@ diabetes_folds <- vfold_cv(diabetes_train, v = 5)
 
 ### Classification Tree
 
+A classification tree model splits the data into regions by dividing at certain points in the predictor variables. The tree then uses the most prevalent class in each region as its prediction. It decides which splits to make by using recursive binary splitting which is a greedy algorithm. It checks every possible value of each predictor to find the squared error loss based on splitting the data around that point. It chooses the split that minimizes this squared error loss the most. Each split then becomes its own path in the tree and more splits are done on each until reaching some stopping criterion - either tree depth (the max number of splits allowed) or min_n (the minimum number of observations left in each region).
+
 ```{r}
+# Diabetes binary as the response and all other variables as predictors
+# normalize variables to be on same scale
 diabetes_tree_rec <- recipe(Diabetes_binary ~ ., data = diabetes_data) |>
   step_normalize(all_numeric())
 ```
 
 ```{r}
+# classification decision tree model, cost complexity will be tuned
 diabetes_tree_mod <- decision_tree(tree_depth = 30,
-                          min_n = 20,
-                          cost_complexity = tune()) |>
+                                   min_n = 20,
+                                   cost_complexity = tune()) |>
   set_engine("rpart") |>
   set_mode("classification")
 ```
 
 ```{r}
+# Create classification tree workflow
 diabetes_tree_wkf <- workflow() |>
   add_recipe(diabetes_tree_rec) |>
   add_model(diabetes_tree_mod)
 ```
 
 ```{r}
+# Grid to tune cost compexity across 10 different values
 diabetes_tree_grid <- grid_regular(cost_complexity(),
                                    levels = 10)
+
+# Use a tuning grid with the cross validation folds
+# using log loss as metric
 diabetes_tree_fits <- diabetes_tree_wkf |>
   tune_grid(resamples = diabetes_folds,
             grid = diabetes_tree_grid,
             metrics = metric_set(mn_log_loss))
 
+# Sort the fits by lowest to highest log loss
 diabetes_tree_fits |>
   collect_metrics() |>
   filter(.metric == "mn_log_loss") |>
@@ -95,6 +119,7 @@ diabetes_tree_fits |>
 ```
 
 ```{r}
+# Select the fit with the lowest log loss
 diabetes_tree_best_params <- select_best(diabetes_tree_fits, 
                                          metric = "mn_log_loss")
 
@@ -102,19 +127,26 @@ diabetes_tree_best_params
 ```
 
 ```{r}
+# Using the original workflow finalize the model with the best params
 diabetes_tree_final_wkf <- diabetes_tree_wkf |>
   finalize_workflow(diabetes_tree_best_params)
 
+# Fit the model on the entire training set and test on test set
 diabetes_tree_final_fit <- diabetes_tree_final_wkf |>
   last_fit(diabetes_split, metrics = metric_set(mn_log_loss))
 
+# Show how best classification tree performed on the test set
 diabetes_tree_final_fit |>
   collect_metrics()
 ```
 
-### Random Forest
+### Classification Random Forest
+
+A classification random forest is an ensemble model of many smaller classification decision trees that each work like I explained above. Bootstrapping is when we treat the sample like a population and resample from it with replacement. This in effect creates a sampling distribution. Each bootstrap sample is used to train a decision tree and then all of the tree predictions are aggregated to get a final prediction. So it's better than a single tree because it helps account for the variability in any given sample to create a more robust model fit. In the random forest, the individual decision trees are also limited to randomly selecting a subset of the predictors (using the mtry parameter) and creating models based off of them. This helps prevent certain variables from taking over and there being multicollinearity between the trees. The models are forced to be more diverse which makes them more robust to new data.
 
 ```{r}
+# Diabetes binary as the response and all other variables as predictors
+# normalize variables to be on same scale
 diabetes_rf_rec <- recipe(Diabetes_binary ~ HighBP + Smoker + PhysActivity + 
                             Fruits + Veggies + HvyAlcoholConsump + 
                             GenHlth + DiffWalk + Sex + Age + Income, 
@@ -123,27 +155,34 @@ diabetes_rf_rec <- recipe(Diabetes_binary ~ HighBP + Smoker + PhysActivity +
 ```
 
 ```{r}
+# classification random forest model, tuning number of params to select from for
+# each tree, also setting impurity to measure feature importance
 diabetes_rf_mod <- rand_forest(mtry = tune(),
-                               trees = 150) |>
+                               trees = 100) |>
   set_engine("ranger", importance = "impurity") |>
   set_mode("classification")
 ```
 
 ```{r}
+# Create classification random forest workflow
 diabetes_rf_wkf <- workflow() |>
   add_recipe(diabetes_rf_rec) |>
   add_model(diabetes_rf_mod)
 ```
 
 ```{r}
+# Grid to tune mtry (from 1 to 11 variables) across 5 different values
 diabetes_rf_grid <- grid_regular(mtry(range = c(1, 11)),
                                  levels = 5)
 
+# Use a tuning grid with the cross validation folds
+# using log loss as metric
 diabetes_rf_fit <- diabetes_rf_wkf |>
   tune_grid(resamples = diabetes_folds,
             grid = diabetes_rf_grid,
             metrics = metric_set(mn_log_loss))
 
+# Sort the fits by lowest to highest log loss
 diabetes_rf_fit |>
   collect_metrics() |>
   filter(.metric == "mn_log_loss") |>
@@ -151,21 +190,26 @@ diabetes_rf_fit |>
 ```
 
 ```{r}
+# Select the fit with the lowest log loss
 diabetes_rf_best_params <- select_best(diabetes_rf_fit, metric = "mn_log_loss") 
 
+# Using the original workflow finalize the model with the best params
 diabetes_rf_final_wkf <- diabetes_rf_wkf |>
   finalize_workflow(diabetes_rf_best_params) 
 
+# Fit the model on the entire training set and test on test set
 diabetes_rf_final_fit <- diabetes_rf_final_wkf |>
   last_fit(diabetes_split, metrics = metric_set(mn_log_loss))
 
+# Show how best classification random forest performed on the test set
 diabetes_rf_final_fit |>
   collect_metrics()
 ```
 
-### Final Model Selection
+## Final Model Selection
 
 ```{r}
+# Compare the best classification decision tree and random forest
 rbind(
   diabetes_tree_final_fit |>
     collect_metrics() |>
@@ -176,9 +220,10 @@ rbind(
 )
 ```
 
-Fit the best model on the full data set.
+The classification random forest performed best on the test set, therefore it is the overall best model.
 
 ```{r}
+# Fit best model on full dataset
 diabetes_best_model <- diabetes_rf_final_wkf |>
   fit(diabetes_data)
 
@@ -186,8 +231,10 @@ diabetes_best_model
 ```
 
 ```{r}
+# get the best model fit
 diabetes_rf_final_model <- extract_fit_engine(diabetes_best_model)
 
+# Plot the variable importance from the best model
 diabetes_rf_final_model$variable.importance |>
   enframe(name = "Variable", value = "Importance") |>
   arrange(Importance) |>
