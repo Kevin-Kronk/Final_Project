@@ -48,7 +48,7 @@ diabetes_data_modes <- diabetes_data |>
 
 # Find means of all numerical variables
 diabetes_data_means <- diabetes_data |>
-  summarize(across(where(is.numeric), ~ as.character(mean(.x))))
+  summarize(across(where(is.numeric), ~ as.character(round(mean(.x),2))))
 
 
 #* pred endpoint
@@ -93,8 +93,8 @@ function(HighBP = diabetes_data_modes$HighBP,
 #* info endpoint
 #* @get /info
 function(){
-  paste("Hello, my name is Kevin Kronk." +
-        "Here's a link to my Diabetes Health Indicators Dataset EDA:" +
+  paste("Hello, my name is Kevin Kronk.",
+        "Here's a link to my Diabetes Health Indicators Dataset EDA:",
         "https://kevin-kronk.github.io/Final_Project/EDA.html")
 }
 
@@ -102,13 +102,20 @@ function(){
 #* @serializer png
 #* @get /confusion
 function(){
-  diabetes_best_model <- diabetes_rf_wkf |>
-    fit(diabetes_data) 
-  a <- yardstick::conf_mat(diabetes_data |> 
-             mutate(estimate = diabetes_best_model |>
-                      predict(diabetes_data) |>
-                      pull()), # data
-           Diabetes_binary, #truth
-           estimate) # estimate from the model
-  print(a)
+  diabetes_cm <- yardstick::conf_mat(diabetes_data |> 
+                                       mutate(estimate = diabetes_best_model |>
+                                                predict(diabetes_data) |>
+                                                pull()), # data
+                                     Diabetes_binary, #truth
+                                     estimate) # estimate from the model
+  
+  diabetes_cm <- as.data.frame(diabetes_cm$table) 
+  
+  diabetes_cm$Truth <- factor(diabetes_cm$Truth, levels = c("1", "0"))
+  
+  cm_heatmap <- ggplot(diabetes_cm, aes(Truth, Prediction, fill=Freq)) +
+    geom_tile(color = "Black", lwd = 1.5) + 
+    geom_text(aes(label=Freq), color = "White", size = 5)
+  
+  print(cm_heatmap) 
 }
