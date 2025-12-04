@@ -2,6 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-.tar
+API_Docker/*.tar
 
 /.quarto/

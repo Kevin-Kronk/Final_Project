@@ -112,11 +112,11 @@ function(HighBP = diabetes_data_modes$HighBP,
   print(prediction)
 }
 
-# http://127.0.0.1:14149/pred?HighBP=High&Smoker=No&PhysActivity=Yes&Fruits=Yes&Veggies=Yes&HvyAlcoholConsump=No&GenHlth=5&DiffWalk=Yes&Sex=Female&Age=11&Income=1
+# http://127.0.0.1:8000/pred?HighBP=High&Smoker=No&PhysActivity=Yes&Fruits=Yes&Veggies=Yes&HvyAlcoholConsump=No&GenHlth=5&DiffWalk=Yes&Sex=Female&Age=11&Income=1
 
-# http://127.0.0.1:14149/pred?HighBP=Low&Smoker=No&PhysActivity=Yes&Fruits=Yes&Veggies=Yes&HvyAlcoholConsump=No&GenHlth=1&DiffWalk=No&Sex=Female&Age=6&Income=8
+# http://127.0.0.1:8000/pred?HighBP=Low&Smoker=No&PhysActivity=Yes&Fruits=Yes&Veggies=Yes&HvyAlcoholConsump=No&GenHlth=1&DiffWalk=No&Sex=Female&Age=6&Income=8
 
-# http://127.0.0.1:14149/pred?HighBP=High&Smoker=No&PhysActivity=No&Fruits=Yes&Veggies=Yes&HvyAlcoholConsump=No&GenHlth=4&DiffWalk=Yes&Sex=Male&Age=10&Income=5
+# http://127.0.0.1:8000/pred?HighBP=High&Smoker=No&PhysActivity=No&Fruits=Yes&Veggies=Yes&HvyAlcoholConsump=No&GenHlth=4&DiffWalk=Yes&Sex=Male&Age=10&Income=5
 
 
 #* My name and a link to the EDA and Modeling
