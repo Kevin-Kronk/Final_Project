@@ -8,13 +8,13 @@ editor: visual
 
 ## Diabetes Health Indicators Dataset
 
-The Diabetes Health Indicators Dataset is from the BRFSS 2015 dataset on Kaggle. It is the Behavioral Risk Factor Surveillance System, which is a telephone survey collected annually by the CDC. Diabetes is a chronic disease that is prevelant in the United States, has a strongly negative impact on those with it, and has a major negative impact on the economy. Early diagnosis of the disease can allow individuals to make lifestyle changes and seek treatment, therefore it is important to build a model that can accurately predict it.
+The Diabetes Health Indicators Dataset is from the BRFSS 2015 dataset on Kaggle. It is the Behavioral Risk Factor Surveillance System, which is a telephone survey collected annually by the CDC. Diabetes is a chronic disease that is prevalent in the United States, has a strongly negative impact on those with it, and has a major negative impact on the economy. Early diagnosis of the disease can allow individuals to make lifestyle changes and seek treatment, therefore it is important to build a model that can accurately predict it.
 
 The focus of my project will be on how lifestyle and basic health variables impact whether or not someone has diabetes and if we are able to predict having diabetes based on these variables. The EDA will be used to explore these variables to look at their frequencies and distributions, as well as see how they relate to the response variable Diabetes_binary which expresses whether the person has diabetes or not. Modeling will be done to determine which model is best able to predict someone having diabetes based on which has the lowest log-loss.
 
 ### Variables
 
-Diabetes_binary - binary variable where 0 is no diabetes and 1 is for prediabetes or diabetes.
+Diabetes_binary - binary variable where 0 is no diabetes and 1 is for prediabetes or diabetes. This is the response variable.
 
 HighBP - binary variable where 0 is not high and 1 is high blood pressure.
 
@@ -55,17 +55,28 @@ diabetes_data <- read_csv("API_Docker/diabetes_binary_health_indicators_BRFSS201
 analysis_variables <- c("Diabetes_binary", "HighBP", "Smoker", "PhysActivity",
                         "Fruits", "Veggies", "HvyAlcoholConsump", "GenHlth",
                         "DiffWalk", "Sex", "Age", "Income")
+
+# When converting variables to factor, set levels and labels for those levels
 diabetes_data <- diabetes_data |>
   select(all_of(analysis_variables)) |>
-  mutate(Diabetes_binary = factor(Diabetes_binary),
-         HighBP = factor(HighBP),
-         Smoker = factor(Smoker),
-         PhysActivity = factor(PhysActivity),
-         Fruits = factor(Fruits), 
-         Veggies = factor(Veggies),
-         HvyAlcoholConsump = factor(HvyAlcoholConsump),
-         DiffWalk = factor(DiffWalk),
-         Sex = factor(Sex))
+  mutate(Diabetes_binary = factor(Diabetes_binary, 
+                                  levels = c("0", "1"), labels = c("No", "Yes")),
+         HighBP = factor(HighBP,
+                         levels = c("0", "1"), labels = c("Low", "High")),
+         Smoker = factor(Smoker,
+                         levels = c("0", "1"), labels = c("No", "Yes")),
+         PhysActivity = factor(PhysActivity,
+                               levels = c("0", "1"), labels = c("No", "Yes")),
+         Fruits = factor(Fruits,
+                         levels = c("0", "1"), labels = c("No", "Yes")), 
+         Veggies = factor(Veggies,
+                          levels = c("0", "1"), labels = c("No", "Yes")),
+         HvyAlcoholConsump = factor(HvyAlcoholConsump,
+                                    levels = c("0", "1"), labels = c("No", "Yes")),
+         DiffWalk = factor(DiffWalk,
+                           levels = c("0", "1"), labels = c("No", "Yes")),
+         Sex = factor(Sex,
+                      levels = c("0", "1"), labels = c("Female", "Male")))
 
 diabetes_data
 ```
@@ -97,10 +108,14 @@ diabetes_data |>
 ```
 
 ```{r}
-# Plot of Diabetes_binary
+# Bar plot of Diabetes_binary
 ggplot(diabetes_data, aes(Diabetes_binary, fill = Diabetes_binary)) +
-  geom_bar()
+  geom_bar() + 
+  labs(title = "Bar Plot of Diabetes Binary", 
+       x = "Diabetes Binary", fill = "Diabetes Binary")
 ```
+
+As you can see there are far more people who do not have diabetes than those who either have prediabetes or diabetes. Therefore when splitting the data into a training and test set, this response variable will be used as a strata to make sure that both sets have a roughly equal proportion of "No" and "Yes".
 
 ### High Blood Pressure
 
@@ -112,17 +127,30 @@ diabetes_data |>
 ```
 
 ```{r}
-# Plot of HighBP
+# Bar plot of HighBP
 ggplot(diabetes_data, aes(HighBP, fill = HighBP)) +
-  geom_bar()
+  geom_bar() +
+  labs(title = "Bar Plot of High Blood Pressure", 
+       x = "High Blood Pressure", fill = "High BP")
+```
+
+```{r}
+# Get two way contingency table of HighBP and Diabetes_binary
+diabetes_data |>
+  group_by(HighBP, Diabetes_binary) |>
+  summarize(count = n(), .groups = "drop")
 ```
 
 ```{r}
 # Plot of HighBP by Diabetes_binary
 ggplot(diabetes_data, aes(HighBP, fill = HighBP)) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) + 
+  labs(title = "Bar Plots of High Blood Pressure by Diabetes Diagnosis",
+       x = "High Blood Pressure", fill = "High BP")
 ```
+
+Overall there are more people with low blood pressure, than with high blood pressure. However, when looking across the diabetes diagnosis, it appears that there are more people who have high blood pressure than low in the group that also has diabetes.
 
 ### Smoker
 
@@ -134,17 +162,28 @@ diabetes_data |>
 ```
 
 ```{r}
-# Plot of Smoker
+# Bar plot of Smoker
 ggplot(diabetes_data, aes(Smoker, fill = Smoker)) +
-  geom_bar()
+  geom_bar() + 
+  labs(title = "Bar Plot of Smoking Status")
+```
+
+```{r}
+# Get two way contingency table of Smoker and Diabetes_binary
+diabetes_data |>
+  group_by(Smoker, Diabetes_binary) |>
+  summarize(count = n(), .groups = "drop")
 ```
 
 ```{r}
 # Plot of Smoker by Diabetes_binary
 ggplot(diabetes_data, aes(Smoker, fill = Smoker)) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) + 
+  labs(title = "Bar Plots of Smoking Status by Diabetes Diagnosis")
 ```
+
+Overall, there appears to be more people who are not smokers than those who are. However, when looking by diabetes diagnosis, the group that has diabetes have slightly more smokers than non-smokers.
 
 ### Physical Activity
 
@@ -156,17 +195,30 @@ diabetes_data |>
 ```
 
 ```{r}
-# Plot of PhysActivity
+# B plot of PhysActivity
 ggplot(diabetes_data, aes(PhysActivity, fill = PhysActivity)) +
-  geom_bar()
+  geom_bar() + 
+  labs(title = "Bar Plot of Physical Activity", 
+       x = "Physical Activity", fill = "Physical Activity")
+```
+
+```{r}
+# Get two way contingency table of PhysActivity and Diabetes_binary
+diabetes_data |>
+  group_by(PhysActivity, Diabetes_binary) |>
+  summarize(count = n(), .groups = "drop")
 ```
 
 ```{r}
 # Plot of PhysActivity by Diabetes_binary
 ggplot(diabetes_data, aes(PhysActivity, fill = PhysActivity)) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) + 
+  labs(title = "Bar Plots of Physical Activity by Diabetes Diagnosis",
+       x = "Physical Activity", fill = "Physical Activity")
 ```
+
+Overall there are far more people who get physical activity outside of work than those who don't. Breaking it down by diabetes diagnosis, the same trend can be seen in both groups, however the proportion of those who exercise compared to those who don't appears to be lower in the diabetes group.
 
 ### Fruits
 
@@ -178,17 +230,28 @@ diabetes_data |>
 ```
 
 ```{r}
-# Plot of Fruits
+# Bar plot of Fruits
 ggplot(diabetes_data, aes(Fruits, fill = Fruits)) +
-  geom_bar()
+  geom_bar() + 
+  labs(title = "Bar Plot of Fruit Consumption")
+```
+
+```{r}
+# Get two way contingency table of Fruits and Diabetes_binary
+diabetes_data |>
+  group_by(Fruits, Diabetes_binary) |>
+  summarize(count = n(), .groups = "drop")
 ```
 
 ```{r}
 # Plot of Fruits by Diabetes_binary
 ggplot(diabetes_data, aes(Fruits, fill = Fruits)) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) +
+  labs(title = "Bar Plots of Fruit Consumption by Diabetes Diagnosis")
 ```
+
+Overall there are more people who consume fruits each day than those that don't. Breaking it down by diabetes diagnosis and the two groups look roughly similar. Fruit consumption likely doesn't relate much to diabetes diagnosis.
 
 ### Veggies
 
@@ -200,17 +263,28 @@ diabetes_data |>
 ```
 
 ```{r}
-# Plot of Veggies
+# Bar plot of Veggies
 ggplot(diabetes_data, aes(Veggies, fill = Veggies)) +
-  geom_bar()
+  geom_bar() +
+  labs(title = "Bar Plot of Vegetable Consumption")
+```
+
+```{r}
+# Get two way contingency table of Veggies and Diabetes_binary
+diabetes_data |>
+  group_by(Veggies, Diabetes_binary) |>
+  summarize(count = n(), .groups = "drop")
 ```
 
 ```{r}
 # Plot of Veggies by Diabetes_binary
 ggplot(diabetes_data, aes(Veggies, fill = Veggies)) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) + 
+  labs(title = "Bar Plots of Vegetable Consumption by Diabetes Diagnosis")
 ```
+
+There are more people who consume veggies each day than those that don't. Breaking it down by diabetes diagnosis and the two groups look roughly similar. Veggie consumption likely doesn't relate much to diabetes diagnosis.
 
 ### Heavy Alcohol Consumption
 
@@ -222,17 +296,30 @@ diabetes_data |>
 ```
 
 ```{r}
-# Plot of HvyAlcoholConsump
+# Bar plot of HvyAlcoholConsump
 ggplot(diabetes_data, aes(HvyAlcoholConsump, fill = HvyAlcoholConsump)) +
-  geom_bar()
+  geom_bar() +
+  labs(title = "Bar Plot of Heavy Alcohol Consumption",
+       x = "Heavy Alcohol Consumption", fill = "Hvy Alcohol Consump")
+```
+
+```{r}
+# Get two way contingency table of HvyAlcoholConsump and Diabetes_binary
+diabetes_data |>
+  group_by(HvyAlcoholConsump, Diabetes_binary) |>
+  summarize(count = n(), .groups = "drop")
 ```
 
 ```{r}
 # Plot of HvyAlcoholConsump by Diabetes_binary
 ggplot(diabetes_data, aes(HvyAlcoholConsump, fill = HvyAlcoholConsump)) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) + 
+  labs(title = "Bar Plots of Heavy Alcohol Consumption by Diabetes Diagnosis",
+       x = "Heavy Alcohol Consumption", fill = "Hvy Alcohol Consump")
 ```
+
+There are more people who don't consume a heavy amount of alcohol than those who do. Breaking it down by diabetes diagnosis and the two groups look roughly similar. Heavy alcohol consumption likely doesn't relate much to diabetes diagnosis.
 
 ### General Health
 
@@ -249,17 +336,38 @@ summary(diabetes_data$GenHlth)
 ```
 
 ```{r}
-# Plot of GenHlth
+# Bar plot of GenHlth
 ggplot(diabetes_data, aes(GenHlth, fill = factor(GenHlth))) +
-  geom_bar()
+  geom_bar() +
+  labs(title = "Bar Plot of General Health",
+       x = "General Health (Excellent to Poor)", fill = "General Health")
+```
+
+```{r}
+# Get mean of GenHlth for those with and without diabetes
+diabetes_data |>
+  group_by(Diabetes_binary) |>
+  summarize(Mean = mean(GenHlth), .groups = "drop")
+```
+
+```{r}
+# Boxplots of GenHlth by Diabetes_binary
+ggplot(diabetes_data, aes(Diabetes_binary, GenHlth, color = Diabetes_binary)) +
+  geom_boxplot() + 
+  labs(title = "Boxplots of General Health by Diabetes Diagnosis",
+       x = "Diabetes Binary", y = "General Health", color = "Diabetes Binary")
 ```
 
 ```{r}
 # Plot of GenHlth by Diabetes_binary
 ggplot(diabetes_data, aes(GenHlth, fill = factor(GenHlth))) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) +
+  labs(title = "Bar Plots of General Health by Diabetes Diagnosis",
+       x = "General Health", fill = "General Health")
 ```
+
+On average the general health of those with diabetes is worse than those without diabetes. As we can see in the distribution, there are proportionally far fewer people in excellent (1), very good (2), and good health (3), in the diabetes group.
 
 ### Difficulty Walking
 
@@ -273,15 +381,28 @@ diabetes_data |>
 ```{r}
 # Plot of DiffWalk
 ggplot(diabetes_data, aes(DiffWalk, fill = DiffWalk)) +
-  geom_bar()
+  geom_bar() +
+  labs(title = "Bar Plot of Difficulty Walking", 
+       x = "Difficulty Walking", fill = "Diff Walking")
+```
+
+```{r}
+# Get two way contingency table of DiffWalk and Diabetes_binary
+diabetes_data |>
+  group_by(DiffWalk, Diabetes_binary) |>
+  summarize(count = n(), .groups = "drop")
 ```
 
 ```{r}
 # Plot of DiffWalk by Diabetes_binary
 ggplot(diabetes_data, aes(DiffWalk, fill = factor(DiffWalk))) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) +
+  labs(title = "Bar Plots of Difficulty Walking by Diabetes Diagnosis",
+       x = "Difficulty Walking", fill = "Diff Walking")
 ```
+
+There are more people who don't have difficulty walking than those who do. When broken down by diabetes diagnosis both groups follow that same trend, however those with diabetes had proportionally more people who had difficulty walking than those without diabetes.
 
 ### Sex
 
@@ -293,17 +414,28 @@ diabetes_data |>
 ```
 
 ```{r}
-# Plot of Sex
+# Bar plot of Sex
 ggplot(diabetes_data, aes(Sex, fill = Sex)) +
-  geom_bar()
+  geom_bar() +
+  labs(title = "Bar Plot of Sex")
+```
+
+```{r}
+# Get two way contingency table of Sex and Diabetes_binary
+diabetes_data |>
+  group_by(Sex, Diabetes_binary) |>
+  summarize(count = n(), .groups = "drop")
 ```
 
 ```{r}
 # Plot of Sex by Diabetes_binary
-ggplot(diabetes_data, aes(Sex, fill = factor(Sex))) +
+ggplot(diabetes_data, aes(Sex, fill = Sex)) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) + 
+  labs(title = "Bar Plots of Sex by Diabetes Diagnosis")
 ```
+
+In this dataset there are more females than males. When broken down by diabetes diagnosis that trend holds for both groups, however the diabetes group has a higher proportion of men than the group without diabetes.
 
 ### Age
 
@@ -313,17 +445,36 @@ summary(diabetes_data$Age)
 ```
 
 ```{r}
-# Plot of Age
+# Bar plot of Age
 ggplot(diabetes_data, aes(Age, fill = factor(Age))) +
-  geom_bar()
+  geom_bar() +
+  labs(title = "Bar Plot of Age", fill = "Age")
+```
+
+```{r}
+# Get mean of Age for those with and without diabetes
+diabetes_data |>
+  group_by(Diabetes_binary) |>
+  summarize(Mean = mean(Age), .groups = "drop")
+```
+
+```{r}
+# Boxplots of Age by Diabetes_binary
+ggplot(diabetes_data, aes(Diabetes_binary, Age, color = Diabetes_binary)) +
+  geom_boxplot() + 
+  labs(title = "Boxplots of Age by Diabetes Diagnosis",
+       x = "Diabetes Binary", y = "Age", color = "Diabetes Binary")
 ```
 
 ```{r}
 # Plot of Age by Diabetes_binary
 ggplot(diabetes_data, aes(Age, fill = factor(Age))) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) +
+  labs(title = "Bar Plots of Age by Diabetes Diagnosis", fill = "Age")
 ```
+
+The mean and median of the age groups are both roughly 8. Those who have diabetes are older on average than those without it. The distributions of the groups are roughly similar, though perhaps with proportionally fewer of the low age groups in the diabetes group.
 
 ### Income
 
@@ -333,16 +484,35 @@ summary(diabetes_data$Income)
 ```
 
 ```{r}
-# Plot of Income
+# Bar plot of Income
 ggplot(diabetes_data, aes(Income, fill = factor(Income))) +
-  geom_bar()
+  geom_bar() +
+  labs(title = "Bar Plot of Income", fill = "Income")
+```
+
+```{r}
+# Get mean of Income for those with and without diabetes
+diabetes_data |>
+  group_by(Diabetes_binary) |>
+  summarize(Mean = mean(Income), .groups = "drop")
+```
+
+```{r}
+# Boxplots of Income by Diabetes_binary
+ggplot(diabetes_data, aes(Diabetes_binary, Income, color = Diabetes_binary)) +
+  geom_boxplot() + 
+  labs(title = "Boxplots of Income by Diabetes Diagnosis",
+       x = "Diabetes Binary", y = "Income", color = "Diabetes Binary")
 ```
 
 ```{r}
 # Plot of Income by Diabetes_binary
 ggplot(diabetes_data, aes(Income, fill = factor(Income))) +
   geom_bar() +
-  facet_wrap(~ Diabetes_binary)
+  facet_wrap(~ Diabetes_binary) +
+  labs(title = "Bar Plots of Income by Diabetes Diagnosis", fill = "Income")
 ```
+
+The overall distribution of income is left skewed with a mean of roughly 6 and a median of 7. The average income of the people without diabetes is higher than those with it. As we can see in the distributions, the group with diabetes is a lot less steep of an increase, with the 8 income group being proportionally far less than in the group without diabetes.
 
 [Click here for the Modeling Page](Modeling.html)
