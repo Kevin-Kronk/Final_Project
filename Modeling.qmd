@@ -124,7 +124,7 @@ diabetes_rf_rec <- recipe(Diabetes_binary ~ HighBP + Smoker + PhysActivity +
 
 ```{r}
 diabetes_rf_mod <- rand_forest(mtry = tune(),
-                               trees = 100) |>
+                               trees = 150) |>
   set_engine("ranger", importance = "impurity") |>
   set_mode("classification")
 ```

@@ -31,7 +31,7 @@ diabetes_rf_rec <- recipe(Diabetes_binary ~ HighBP + Smoker + PhysActivity +
   step_normalize(all_numeric())
 
 diabetes_rf_mod <- rand_forest(mtry = 3,
-                               trees = 100) |>
+                               trees = 150) |>
   set_engine("ranger", importance = "impurity") |>
   set_mode("classification")
 
@@ -89,6 +89,13 @@ function(HighBP = diabetes_data_modes$HighBP,
   prediction <- predict(diabetes_best_model, new_data = pred_data)
   print(prediction)
 }
+
+# http://127.0.0.1:22285/pred?HighBP=1&Smoker=0&PhysActivity=1&Fruits=1&Veggies=1&HvyAlcoholConsump=0&GenHlth=5&DiffWalk=1&Sex=0&Age=11&Income=1
+
+# http://127.0.0.1:22285/pred?HighBP=0&Smoker=0&PhysActivity=1&Fruits=1&Veggies=1&HvyAlcoholConsump=0&GenHlth=1&DiffWalk=0&Sex=0&Age=6&Income=8
+
+# http://127.0.0.1:22285/pred?HighBP=1&Smoker=0&PhysActivity=0&Fruits=1&Veggies=1&HvyAlcoholConsump=0&GenHlth=4&DiffWalk=1&Sex=1&Age=10&Income=5
+
 
 #* info endpoint
 #* @get /info
