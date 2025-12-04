@@ -51,7 +51,10 @@ diabetes_data_means <- diabetes_data |>
   summarize(across(where(is.numeric), ~ as.character(round(mean(.x),2))))
 
 
-#* pred endpoint
+#* @apiTitle Diabetes Health Indicators Dataset Analysis
+#* @apiDescription Using Docker and an API to perform the analysis
+
+#* Using a random forest model to make predictions on diabetes status
 #* @param HighBP High Blood Pressure number
 #* @param Smoker Smoker number
 #* @param PhysActivity Physical Activity number
@@ -90,14 +93,14 @@ function(HighBP = diabetes_data_modes$HighBP,
   print(prediction)
 }
 
-# http://127.0.0.1:22285/pred?HighBP=1&Smoker=0&PhysActivity=1&Fruits=1&Veggies=1&HvyAlcoholConsump=0&GenHlth=5&DiffWalk=1&Sex=0&Age=11&Income=1
+# http://127.0.0.1:8000/pred?HighBP=1&Smoker=0&PhysActivity=1&Fruits=1&Veggies=1&HvyAlcoholConsump=0&GenHlth=5&DiffWalk=1&Sex=0&Age=11&Income=1
 
-# http://127.0.0.1:22285/pred?HighBP=0&Smoker=0&PhysActivity=1&Fruits=1&Veggies=1&HvyAlcoholConsump=0&GenHlth=1&DiffWalk=0&Sex=0&Age=6&Income=8
+# http://127.0.0.1:8000/pred?HighBP=0&Smoker=0&PhysActivity=1&Fruits=1&Veggies=1&HvyAlcoholConsump=0&GenHlth=1&DiffWalk=0&Sex=0&Age=6&Income=8
 
-# http://127.0.0.1:22285/pred?HighBP=1&Smoker=0&PhysActivity=0&Fruits=1&Veggies=1&HvyAlcoholConsump=0&GenHlth=4&DiffWalk=1&Sex=1&Age=10&Income=5
+# http://127.0.0.1:8000/pred?HighBP=1&Smoker=0&PhysActivity=0&Fruits=1&Veggies=1&HvyAlcoholConsump=0&GenHlth=4&DiffWalk=1&Sex=1&Age=10&Income=5
 
 
-#* info endpoint
+#* My name and a link to the EDA and Modeling
 #* @get /info
 function(){
   paste("Hello, my name is Kevin Kronk.",
@@ -105,7 +108,7 @@ function(){
         "https://kevin-kronk.github.io/Final_Project/EDA.html")
 }
 
-#* confusion endpoint
+#* Confusion Matrix showing model performance on the data
 #* @serializer png
 #* @get /confusion
 function(){
